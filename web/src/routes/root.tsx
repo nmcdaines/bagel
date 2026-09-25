@@ -9,6 +9,7 @@ export default function Root() {
           <NavLink to="/" end>
             Home
           </NavLink>
+          <NavLink to="/projects">Projects</NavLink>
           <NavLink to="/notes">Notes</NavLink>
           <NavLink to="/about">About</NavLink>
         </nav>

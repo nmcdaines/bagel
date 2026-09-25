@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, title, body,\n                  created_at AS \"created_at: DateTime<Utc>\",\n                  updated_at AS \"updated_at: DateTime<Utc>\"\n           FROM notes\n           WHERE id = ?",
+  "query": "UPDATE notes\n           SET title = ?, body = ?, project_id = ?, updated_at = CURRENT_TIMESTAMP\n           WHERE id = ?\n           RETURNING id AS \"id!\", title, body, project_id AS \"project_id?\",\n                     created_at AS \"created_at: DateTime<Utc>\",\n                     updated_at AS \"updated_at: DateTime<Utc>\"",
   "describe": {
     "columns": [
       {
-        "name": "id",
+        "name": "id!",
         "ordinal": 0,
         "type_info": "Integer",
         "origin": {
@@ -37,8 +37,19 @@
         }
       },
       {
-        "name": "created_at: DateTime<Utc>",
+        "name": "project_id?",
         "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "name": "created_at: DateTime<Utc>",
+        "ordinal": 4,
         "type_info": "Datetime",
         "origin": {
           "Table": {
@@ -49,7 +60,7 @@
       },
       {
         "name": "updated_at: DateTime<Utc>",
-        "ordinal": 4,
+        "ordinal": 5,
         "type_info": "Datetime",
         "origin": {
           "Table": {
@@ -60,9 +71,10 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 4
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -70,5 +82,5 @@
       false
     ]
   },
-  "hash": "16d16ef1bf0a01b4e66e08da0453c22227ee02aef7857b80ca05e6f791738e21"
+  "hash": "5cb3d6044d73f4214e4cd83f17157b2a37de87cd0fafcbdb10283b8dc32445d9"
 }

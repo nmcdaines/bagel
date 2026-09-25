@@ -2,7 +2,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api, type Note } from './api.ts'
 
 // Query keys come from openapi-react-query (`[method, path, init]`), so they stay in sync with
-// the paths in the OpenAPI contract.
+// the paths in the OpenAPI contract. `listKey` has no params, so it prefixes every notes list,
+// including those filtered by project.
 const listKey = api.queryOptions('get', '/api/notes').queryKey
 const detailKey = (id: number) =>
   api.queryOptions('get', '/api/notes/{id}', { params: { path: { id } } }).queryKey
@@ -15,8 +16,13 @@ export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Request failed'
 }
 
-export function useNotes() {
-  return api.useQuery('get', '/api/notes')
+/** All notes, or only those in `projectId` when given. */
+export function useNotes(projectId?: number) {
+  return api.useQuery(
+    'get',
+    '/api/notes',
+    projectId === undefined ? undefined : { params: { query: { project_id: projectId } } },
+  )
 }
 
 export function useCreateNote() {
@@ -39,15 +45,17 @@ export function useUpdateNote() {
 export function useDeleteNote() {
   const queryClient = useQueryClient()
   return api.useMutation('delete', '/api/notes/{id}', {
-    // Optimistically drop the note from the list; roll back if the request fails.
+    // Optimistically drop the note from every list; roll back if the request fails.
     onMutate: async ({ params: { path: { id } } }) => {
       await queryClient.cancelQueries({ queryKey: listKey })
-      const previous = queryClient.getQueryData<Note[]>(listKey)
-      queryClient.setQueryData<Note[]>(listKey, (notes) => notes?.filter((n) => n.id !== id))
+      const previous = queryClient.getQueriesData<Note[]>({ queryKey: listKey })
+      queryClient.setQueriesData<Note[]>({ queryKey: listKey }, (notes) =>
+        notes?.filter((n) => n.id !== id),
+      )
       return { previous }
     },
     onError: (_err, _vars, context) => {
-      queryClient.setQueryData(listKey, context?.previous)
+      for (const [key, notes] of context?.previous ?? []) queryClient.setQueryData(key, notes)
     },
     onSettled: (_data, _err, { params: { path: { id } } }) => {
       queryClient.removeQueries({ queryKey: detailKey(id) })

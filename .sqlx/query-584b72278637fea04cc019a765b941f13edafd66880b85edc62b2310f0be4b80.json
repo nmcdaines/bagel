@@ -1,38 +1,38 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, title, body,\n                  created_at AS \"created_at: DateTime<Utc>\",\n                  updated_at AS \"updated_at: DateTime<Utc>\"\n           FROM notes\n           ORDER BY updated_at DESC, id DESC",
+  "query": "UPDATE projects\n           SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP\n           WHERE id = ?\n           RETURNING id AS \"id!\", name, description,\n                     created_at AS \"created_at: DateTime<Utc>\",\n                     updated_at AS \"updated_at: DateTime<Utc>\"",
   "describe": {
     "columns": [
       {
-        "name": "id",
+        "name": "id!",
         "ordinal": 0,
         "type_info": "Integer",
         "origin": {
           "Table": {
-            "table": "notes",
+            "table": "projects",
             "name": "id"
           }
         }
       },
       {
-        "name": "title",
+        "name": "name",
         "ordinal": 1,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "notes",
-            "name": "title"
+            "table": "projects",
+            "name": "name"
           }
         }
       },
       {
-        "name": "body",
+        "name": "description",
         "ordinal": 2,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "notes",
-            "name": "body"
+            "table": "projects",
+            "name": "description"
           }
         }
       },
@@ -42,7 +42,7 @@
         "type_info": "Datetime",
         "origin": {
           "Table": {
-            "table": "notes",
+            "table": "projects",
             "name": "created_at"
           }
         }
@@ -53,14 +53,14 @@
         "type_info": "Datetime",
         "origin": {
           "Table": {
-            "table": "notes",
+            "table": "projects",
             "name": "updated_at"
           }
         }
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 3
     },
     "nullable": [
       false,
@@ -70,5 +70,5 @@
       false
     ]
   },
-  "hash": "bc0cd891f4236bf75a8b459b85de47359545add0fd7e16a6936ee2eda27a7d9f"
+  "hash": "584b72278637fea04cc019a765b941f13edafd66880b85edc62b2310f0be4b80"
 }
