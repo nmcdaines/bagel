@@ -1,17 +1,12 @@
-import createClient from 'openapi-fetch'
+import createFetchClient from 'openapi-fetch'
+import createClient from 'openapi-react-query'
 import type { components, paths } from './api.gen.ts'
 
 // Types and paths come from api.gen.ts, generated from the server's OpenAPI document
 // (../openapi.json). Run `npm run gen:api` after changing the API.
-export const api = createClient<paths>()
+export const fetchClient = createFetchClient<paths>()
+
+// Typed TanStack Query hooks, e.g. `api.useQuery('get', '/api/health')`.
+export const api = createClient(fetchClient)
 
 export type Health = components['schemas']['Health']
-
-export async function fetchHealth(): Promise<Health | null> {
-  try {
-    const { data } = await api.GET('/api/health')
-    return data ?? null
-  } catch {
-    return null
-  }
-}

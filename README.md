@@ -32,7 +32,9 @@ The Rust handlers are the source of truth. Each `/api` handler is annotated with
 its request/response types derive `ToSchema`, and it is registered with `routes!` in `src/lib.rs`.
 From that, the server emits an OpenAPI document that is committed as `openapi.json`.
 `openapi-typescript` generates `web/src/api.gen.ts` from it. The frontend calls the API through the
-typed `openapi-fetch` client in `web/src/api.ts`, so a wrong path, parameter or field is a type error.
+typed [TanStack Query](https://tanstack.com/query) hooks in `web/src/api.ts` (built with
+`openapi-react-query` on top of `openapi-fetch`), e.g. `api.useQuery('get', '/api/health')`, so a wrong
+path, parameter or field is a type error.
 
 After changing the API, regenerate both files and commit them:
 
