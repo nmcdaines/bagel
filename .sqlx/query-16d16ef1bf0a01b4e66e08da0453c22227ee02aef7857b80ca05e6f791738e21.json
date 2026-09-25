@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, title, body,\n                  created_at AS \"created_at: DateTime<Utc>\",\n                  updated_at AS \"updated_at: DateTime<Utc>\"\n           FROM notes\n           WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "name": "body",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "body"
+          }
+        }
+      },
+      {
+        "name": "created_at: DateTime<Utc>",
+        "ordinal": 3,
+        "type_info": "Datetime",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "updated_at: DateTime<Utc>",
+        "ordinal": 4,
+        "type_info": "Datetime",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "16d16ef1bf0a01b4e66e08da0453c22227ee02aef7857b80ca05e6f791738e21"
+}

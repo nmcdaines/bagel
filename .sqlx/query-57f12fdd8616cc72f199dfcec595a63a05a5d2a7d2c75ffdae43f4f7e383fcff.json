@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE notes\n           SET title = ?, body = ?, updated_at = CURRENT_TIMESTAMP\n           WHERE id = ?\n           RETURNING id AS \"id!\", title, body,\n                     created_at AS \"created_at: DateTime<Utc>\",\n                     updated_at AS \"updated_at: DateTime<Utc>\"",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "name": "body",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "body"
+          }
+        }
+      },
+      {
+        "name": "created_at: DateTime<Utc>",
+        "ordinal": 3,
+        "type_info": "Datetime",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "name": "updated_at: DateTime<Utc>",
+        "ordinal": 4,
+        "type_info": "Datetime",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "57f12fdd8616cc72f199dfcec595a63a05a5d2a7d2c75ffdae43f4f7e383fcff"
+}
