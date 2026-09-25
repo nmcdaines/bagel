@@ -2,6 +2,7 @@ use std::path::Path;
 
 use axum::{Json, Router};
 use serde::Serialize;
+use sqlx::SqlitePool;
 use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
@@ -12,13 +13,18 @@ use utoipa::{
 };
 use utoipa_axum::{router::OpenApiRouter, routes};
 
-pub fn app(static_dir: impl AsRef<Path>) -> Router {
+pub mod db;
+pub mod notes;
+
+pub fn app(static_dir: impl AsRef<Path>, pool: SqlitePool) -> Router {
     let static_dir = static_dir.as_ref();
     // Unknown paths fall back to index.html so client-side routes work on reload.
     let spa = ServeDir::new(static_dir).fallback(ServeFile::new(static_dir.join("index.html")));
 
     let (api, _) = api().split_for_parts();
-    api.fallback_service(spa).layer(TraceLayer::new_for_http())
+    api.with_state(pool)
+        .fallback_service(spa)
+        .layer(TraceLayer::new_for_http())
 }
 
 /// The OpenAPI document describing `/api`. This is the contract with the frontend: it is
@@ -27,9 +33,11 @@ pub fn openapi() -> utoipa::openapi::OpenApi {
     api().split_for_parts().1
 }
 
-fn api() -> OpenApiRouter {
+fn api() -> OpenApiRouter<SqlitePool> {
     // Handlers must be registered via `routes!` to appear in the OpenAPI document.
-    let api = OpenApiRouter::new().routes(routes!(health));
+    let api = OpenApiRouter::new()
+        .routes(routes!(health))
+        .merge(notes::router());
     let info = InfoBuilder::new()
         .title("bagel")
         .version(env!("CARGO_PKG_VERSION"))
@@ -63,7 +71,8 @@ mod tests {
 
     #[tokio::test]
     async fn health_ok() {
-        let res = app("does-not-exist")
+        let pool = db::connect("sqlite::memory:").await.unwrap();
+        let res = app("does-not-exist", pool)
             .oneshot(Request::get("/api/health").body(Body::empty()).unwrap())
             .await
             .unwrap();

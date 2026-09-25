@@ -18,7 +18,14 @@ async fn main() {
         .unwrap_or(3000);
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
-    let app = bagel::app(&static_dir);
+    let database_url =
+        env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://bagel.db?mode=rwc".into());
+    let pool = bagel::db::connect(&database_url)
+        .await
+        .expect("failed to open database and run migrations");
+    tracing::info!("database ready at {database_url}");
+
+    let app = bagel::app(&static_dir, pool);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     tracing::info!("listening on {addr}, serving static files from {static_dir}");
     axum::serve(listener, app)
