@@ -10,3 +10,6 @@ export const fetchClient = createFetchClient<paths>()
 export const api = createClient(fetchClient)
 
 export type Health = components['schemas']['Health']
+export type Note = components['schemas']['Note']
+export type NoteInput = components['schemas']['NoteInput']
+export type ErrorBody = components['schemas']['ErrorBody']
