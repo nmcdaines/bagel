@@ -176,3 +176,157 @@ async fn empty_title_is_rejected() {
     let (_, notes) = send(&app, "GET", "/api/notes", None).await;
     assert_eq!(notes.as_array().unwrap().len(), 1);
 }
+
+/// Sends a raw body and returns the status, content type and parsed JSON error body.
+async fn send_raw(
+    app: &Router,
+    method: &str,
+    uri: &str,
+    content_type: Option<&str>,
+    body: impl Into<Body>,
+) -> (StatusCode, Value) {
+    let mut req = Request::builder().method(method).uri(uri);
+    if let Some(content_type) = content_type {
+        req = req.header(header::CONTENT_TYPE, content_type);
+    }
+    let res = app
+        .clone()
+        .oneshot(req.body(body.into()).unwrap())
+        .await
+        .unwrap();
+    let status = res.status();
+    assert_eq!(
+        res.headers()[header::CONTENT_TYPE],
+        "application/json",
+        "{method} {uri} -> {status} is not JSON"
+    );
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    (status, serde_json::from_slice(&bytes).unwrap())
+}
+
+/// Asserts that both POST /api/notes and PUT /api/notes/{id} reject `body` with `status` and a
+/// JSON `error` message containing `needle`.
+async fn assert_rejected(
+    app: &Router,
+    content_type: Option<&str>,
+    body: &str,
+    status: StatusCode,
+    needle: &str,
+) {
+    let note = create_note(app, "existing", "").await;
+    let note_uri = format!("/api/notes/{}", note["id"]);
+    for (method, uri) in [("POST", "/api/notes"), ("PUT", note_uri.as_str())] {
+        let (actual, err) = send_raw(app, method, uri, content_type, body.to_owned()).await;
+        assert_eq!(actual, status, "{method} {uri} with {body:?}");
+        let message = err["error"].as_str().unwrap();
+        assert!(
+            message.contains(needle),
+            "{method} {uri}: {message:?} does not contain {needle:?}"
+        );
+    }
+}
+
+const JSON: Option<&str> = Some("application/json");
+
+#[tokio::test]
+async fn malformed_json_is_400() {
+    let app = test_app().await;
+    assert_rejected(
+        &app,
+        JSON,
+        r#"{"title": "#,
+        StatusCode::BAD_REQUEST,
+        "Failed to parse the request body as JSON",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn missing_title_is_422() {
+    let app = test_app().await;
+    assert_rejected(
+        &app,
+        JSON,
+        "{}",
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "missing field `title`",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn null_title_is_422() {
+    let app = test_app().await;
+    assert_rejected(
+        &app,
+        JSON,
+        r#"{"title": null}"#,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "invalid type: null",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn null_body_is_422() {
+    let app = test_app().await;
+    assert_rejected(
+        &app,
+        JSON,
+        r#"{"title": "x", "body": null}"#,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "invalid type: null",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn missing_content_type_is_415() {
+    let app = test_app().await;
+    let body = r#"{"title": "x"}"#;
+    assert_rejected(
+        &app,
+        None,
+        body,
+        StatusCode::UNSUPPORTED_MEDIA_TYPE,
+        "Content-Type",
+    )
+    .await;
+    assert_rejected(
+        &app,
+        Some("text/plain"),
+        body,
+        StatusCode::UNSUPPORTED_MEDIA_TYPE,
+        "Content-Type",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn oversized_body_is_413() {
+    let app = test_app().await;
+    let body = format!(
+        r#"{{"title": "x", "body": "{}"}}"#,
+        "a".repeat(3 * 1024 * 1024)
+    );
+    assert_rejected(
+        &app,
+        JSON,
+        &body,
+        StatusCode::PAYLOAD_TOO_LARGE,
+        "length limit",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn invalid_path_id_is_400() {
+    let app = test_app().await;
+    for method in ["GET", "PUT", "DELETE"] {
+        let (status, err) =
+            send_raw(&app, method, "/api/notes/abc", JSON, r#"{"title": "x"}"#).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{method}");
+        let message = err["error"].as_str().unwrap();
+        assert!(message.contains("abc"), "{method}: {message:?}");
+    }
+}

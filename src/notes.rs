@@ -1,11 +1,14 @@
 use axum::{
     Json,
-    extract::{Path, State},
-    http::StatusCode,
+    extract::{
+        FromRequest, FromRequestParts, Path, Request, State,
+        rejection::{JsonRejection, PathRejection},
+    },
+    http::{StatusCode, request::Parts},
     response::{IntoResponse, Response},
 };
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use sqlx::SqlitePool;
 use utoipa::ToSchema;
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -49,7 +52,10 @@ impl NoteInput {
     get,
     path = "/notes",
     operation_id = "list_notes",
-    responses((status = OK, description = "All notes, most recently updated first", body = Vec<Note>))
+    responses(
+        (status = OK, description = "All notes, most recently updated first", body = Vec<Note>),
+        (status = INTERNAL_SERVER_ERROR, description = "Database error", body = ErrorBody),
+    )
 )]
 async fn list(State(pool): State<SqlitePool>) -> Result<Json<Vec<Note>>, ApiError> {
     let notes = sqlx::query_as!(
@@ -72,12 +78,16 @@ async fn list(State(pool): State<SqlitePool>) -> Result<Json<Vec<Note>>, ApiErro
     request_body = NoteInput,
     responses(
         (status = CREATED, description = "Note created", body = Note),
-        (status = UNPROCESSABLE_ENTITY, description = "Title is empty", body = ErrorBody),
+        (status = BAD_REQUEST, description = "Request body is not valid JSON", body = ErrorBody),
+        (status = PAYLOAD_TOO_LARGE, description = "Request body is too large", body = ErrorBody),
+        (status = UNSUPPORTED_MEDIA_TYPE, description = "Content-Type is not application/json", body = ErrorBody),
+        (status = UNPROCESSABLE_ENTITY, description = "Body does not match NoteInput, or title is empty", body = ErrorBody),
+        (status = INTERNAL_SERVER_ERROR, description = "Database error", body = ErrorBody),
     )
 )]
 async fn create(
     State(pool): State<SqlitePool>,
-    Json(input): Json<NoteInput>,
+    ApiJson(input): ApiJson<NoteInput>,
 ) -> Result<(StatusCode, Json<Note>), ApiError> {
     let input = input.validate()?;
     let note = sqlx::query_as!(
@@ -101,12 +111,14 @@ async fn create(
     params(("id" = i64, Path, description = "Note id")),
     responses(
         (status = OK, description = "The note", body = Note),
+        (status = BAD_REQUEST, description = "Id is not an integer", body = ErrorBody),
         (status = NOT_FOUND, description = "No note with this id", body = ErrorBody),
+        (status = INTERNAL_SERVER_ERROR, description = "Database error", body = ErrorBody),
     )
 )]
 async fn fetch(
     State(pool): State<SqlitePool>,
-    Path(id): Path<i64>,
+    ApiPath(id): ApiPath<i64>,
 ) -> Result<Json<Note>, ApiError> {
     let note = sqlx::query_as!(
         Note,
@@ -131,14 +143,18 @@ async fn fetch(
     request_body = NoteInput,
     responses(
         (status = OK, description = "Note updated", body = Note),
+        (status = BAD_REQUEST, description = "Id is not an integer, or request body is not valid JSON", body = ErrorBody),
         (status = NOT_FOUND, description = "No note with this id", body = ErrorBody),
-        (status = UNPROCESSABLE_ENTITY, description = "Title is empty", body = ErrorBody),
+        (status = PAYLOAD_TOO_LARGE, description = "Request body is too large", body = ErrorBody),
+        (status = UNSUPPORTED_MEDIA_TYPE, description = "Content-Type is not application/json", body = ErrorBody),
+        (status = UNPROCESSABLE_ENTITY, description = "Body does not match NoteInput, or title is empty", body = ErrorBody),
+        (status = INTERNAL_SERVER_ERROR, description = "Database error", body = ErrorBody),
     )
 )]
 async fn update(
     State(pool): State<SqlitePool>,
-    Path(id): Path<i64>,
-    Json(input): Json<NoteInput>,
+    ApiPath(id): ApiPath<i64>,
+    ApiJson(input): ApiJson<NoteInput>,
 ) -> Result<Json<Note>, ApiError> {
     let input = input.validate()?;
     let note = sqlx::query_as!(
@@ -166,12 +182,14 @@ async fn update(
     params(("id" = i64, Path, description = "Note id")),
     responses(
         (status = NO_CONTENT, description = "Note deleted"),
+        (status = BAD_REQUEST, description = "Id is not an integer", body = ErrorBody),
         (status = NOT_FOUND, description = "No note with this id", body = ErrorBody),
+        (status = INTERNAL_SERVER_ERROR, description = "Database error", body = ErrorBody),
     )
 )]
 async fn remove(
     State(pool): State<SqlitePool>,
-    Path(id): Path<i64>,
+    ApiPath(id): ApiPath<i64>,
 ) -> Result<StatusCode, ApiError> {
     let result = sqlx::query!("DELETE FROM notes WHERE id = ?", id)
         .execute(&pool)
@@ -182,10 +200,39 @@ async fn remove(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// `Json` extractor whose rejections are reported as a JSON [`ErrorBody`]. It keeps axum's
+/// status codes: 400 invalid JSON syntax, 413 body too large, 415 missing/wrong content type,
+/// 422 JSON that doesn't match the target type (missing field, `null`, wrong type).
+pub struct ApiJson<T>(pub T);
+
+impl<S: Send + Sync, T: DeserializeOwned> FromRequest<S> for ApiJson<T> {
+    type Rejection = ApiError;
+
+    async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
+        let Json(value) = Json::<T>::from_request(req, state).await?;
+        Ok(Self(value))
+    }
+}
+
+/// `Path` extractor whose rejections are reported as a JSON [`ErrorBody`] (400 for an
+/// unparseable parameter such as `/api/notes/abc`).
+pub struct ApiPath<T>(pub T);
+
+impl<S: Send + Sync, T: DeserializeOwned + Send> FromRequestParts<S> for ApiPath<T> {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let Path(value) = Path::<T>::from_request_parts(parts, state).await?;
+        Ok(Self(value))
+    }
+}
+
 #[derive(Debug)]
 pub enum ApiError {
     NotFound,
     Validation(&'static str),
+    /// An extractor rejected the request; carries axum's status and message.
+    Rejected(StatusCode, String),
     Database(sqlx::Error),
 }
 
@@ -195,19 +242,35 @@ impl From<sqlx::Error> for ApiError {
     }
 }
 
+impl From<JsonRejection> for ApiError {
+    fn from(rejection: JsonRejection) -> Self {
+        Self::Rejected(rejection.status(), rejection.body_text())
+    }
+}
+
+impl From<PathRejection> for ApiError {
+    fn from(rejection: PathRejection) -> Self {
+        Self::Rejected(rejection.status(), rejection.body_text())
+    }
+}
+
 #[derive(Serialize, ToSchema)]
 pub struct ErrorBody {
-    error: &'static str,
+    error: String,
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let (status, error) = match self {
-            Self::NotFound => (StatusCode::NOT_FOUND, "note not found"),
-            Self::Validation(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg),
+            Self::NotFound => (StatusCode::NOT_FOUND, "note not found".to_owned()),
+            Self::Validation(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg.to_owned()),
+            Self::Rejected(status, msg) => (status, msg),
             Self::Database(err) => {
                 tracing::error!(error = %err, "database error");
-                (StatusCode::INTERNAL_SERVER_ERROR, "internal server error")
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_owned(),
+                )
             }
         };
         (status, Json(ErrorBody { error })).into_response()

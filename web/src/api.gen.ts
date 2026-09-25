@@ -124,6 +124,15 @@ export interface operations {
                     "application/json": components["schemas"]["Note"][];
                 };
             };
+            /** @description Database error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     create_note: {
@@ -148,8 +157,44 @@ export interface operations {
                     "application/json": components["schemas"]["Note"];
                 };
             };
-            /** @description Title is empty */
+            /** @description Request body is not valid JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Request body is too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Content-Type is not application/json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Body does not match NoteInput, or title is empty */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Database error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -180,8 +225,26 @@ export interface operations {
                     "application/json": components["schemas"]["Note"];
                 };
             };
+            /** @description Id is not an integer */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description No note with this id */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Database error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -216,6 +279,15 @@ export interface operations {
                     "application/json": components["schemas"]["Note"];
                 };
             };
+            /** @description Id is not an integer, or request body is not valid JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description No note with this id */
             404: {
                 headers: {
@@ -225,8 +297,35 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Title is empty */
+            /** @description Request body is too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Content-Type is not application/json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Body does not match NoteInput, or title is empty */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Database error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -255,8 +354,26 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Id is not an integer */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description No note with this id */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Database error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
