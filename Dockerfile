@@ -13,7 +13,7 @@ COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
-    cargo build --release --locked \
+    cargo build --release --locked --bin bagel \
     && cp target/release/bagel /usr/local/bin/bagel
 
 FROM gcr.io/distroless/cc-debian13:nonroot
