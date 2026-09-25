@@ -2,6 +2,7 @@
 name = "bagel"
 version = "0.1.0"
 edition = "2024"
+default-run = "bagel"
 
 [dependencies]
 axum = "0.8.9"
@@ -10,6 +11,8 @@ tokio = { version = "1.53.1", features = ["full"] }
 tower-http = { version = "0.7.1", features = ["fs", "trace"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+utoipa = "6.0.0"
+utoipa-axum = "0.3.0"
 
 [dev-dependencies]
 http-body-util = "0.1.5"
