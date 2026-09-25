@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO notes (title, body) VALUES (?, ?)\n           RETURNING id AS \"id!\", title, body,\n                     created_at AS \"created_at: DateTime<Utc>\",\n                     updated_at AS \"updated_at: DateTime<Utc>\"",
+  "query": "INSERT INTO notes (title, body, project_id) VALUES (?, ?, ?)\n           RETURNING id AS \"id!\", title, body, project_id AS \"project_id?\",\n                     created_at AS \"created_at: DateTime<Utc>\",\n                     updated_at AS \"updated_at: DateTime<Utc>\"",
   "describe": {
     "columns": [
       {
@@ -37,8 +37,19 @@
         }
       },
       {
-        "name": "created_at: DateTime<Utc>",
+        "name": "project_id?",
         "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "notes",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "name": "created_at: DateTime<Utc>",
+        "ordinal": 4,
         "type_info": "Datetime",
         "origin": {
           "Table": {
@@ -49,7 +60,7 @@
       },
       {
         "name": "updated_at: DateTime<Utc>",
-        "ordinal": 4,
+        "ordinal": 5,
         "type_info": "Datetime",
         "origin": {
           "Table": {
@@ -60,9 +71,10 @@
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 3
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -70,5 +82,5 @@
       false
     ]
   },
-  "hash": "9ff1d82b67d7bb9692741c2f62705c8d755c57adf622c027cb6e2c7ef7c033db"
+  "hash": "70b85f36e69d02a477907ef179eb5e1bc9ca96e6b9192225cfbc65827958cde1"
 }

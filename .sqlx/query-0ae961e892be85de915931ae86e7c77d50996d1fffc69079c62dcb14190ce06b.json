@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "UPDATE notes\n           SET title = ?, body = ?, updated_at = CURRENT_TIMESTAMP\n           WHERE id = ?\n           RETURNING id AS \"id!\", title, body,\n                     created_at AS \"created_at: DateTime<Utc>\",\n                     updated_at AS \"updated_at: DateTime<Utc>\"",
+  "query": "INSERT INTO projects (name, description) VALUES (?, ?)\n           RETURNING id AS \"id!\", name, description,\n                     created_at AS \"created_at: DateTime<Utc>\",\n                     updated_at AS \"updated_at: DateTime<Utc>\"",
   "describe": {
     "columns": [
       {
@@ -9,30 +9,30 @@
         "type_info": "Integer",
         "origin": {
           "Table": {
-            "table": "notes",
+            "table": "projects",
             "name": "id"
           }
         }
       },
       {
-        "name": "title",
+        "name": "name",
         "ordinal": 1,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "notes",
-            "name": "title"
+            "table": "projects",
+            "name": "name"
           }
         }
       },
       {
-        "name": "body",
+        "name": "description",
         "ordinal": 2,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "notes",
-            "name": "body"
+            "table": "projects",
+            "name": "description"
           }
         }
       },
@@ -42,7 +42,7 @@
         "type_info": "Datetime",
         "origin": {
           "Table": {
-            "table": "notes",
+            "table": "projects",
             "name": "created_at"
           }
         }
@@ -53,14 +53,14 @@
         "type_info": "Datetime",
         "origin": {
           "Table": {
-            "table": "notes",
+            "table": "projects",
             "name": "updated_at"
           }
         }
       }
     ],
     "parameters": {
-      "Right": 3
+      "Right": 2
     },
     "nullable": [
       false,
@@ -70,5 +70,5 @@
       false
     ]
   },
-  "hash": "57f12fdd8616cc72f199dfcec595a63a05a5d2a7d2c75ffdae43f4f7e383fcff"
+  "hash": "0ae961e892be85de915931ae86e7c77d50996d1fffc69079c62dcb14190ce06b"
 }

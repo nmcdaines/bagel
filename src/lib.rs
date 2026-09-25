@@ -14,7 +14,9 @@ use utoipa::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 pub mod db;
+pub mod error;
 pub mod notes;
+pub mod projects;
 
 pub fn app(static_dir: impl AsRef<Path>, pool: SqlitePool) -> Router {
     let static_dir = static_dir.as_ref();
@@ -37,7 +39,8 @@ fn api() -> OpenApiRouter<SqlitePool> {
     // Handlers must be registered via `routes!` to appear in the OpenAPI document.
     let api = OpenApiRouter::new()
         .routes(routes!(health))
-        .merge(notes::router());
+        .merge(notes::router())
+        .merge(projects::router());
     let info = InfoBuilder::new()
         .title("bagel")
         .version(env!("CARGO_PKG_VERSION"))

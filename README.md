@@ -59,15 +59,30 @@ CI fails if either is stale: `cargo test` checks `openapi.json` and the web job 
 ## Notes API
 
 The notes endpoints are part of the OpenAPI contract (`openapi.json`, schemas `Note`, `NoteInput` and
-`ErrorBody`); the `/notes` page uses them through the generated client.
+`ErrorBody`); the `/notes` page uses them through the generated client. A note belongs to at most one
+project: set `project_id` (or leave it out/`null` for none), and filter the list with
+`GET /api/notes?project_id=<id>`. An unknown `project_id` is a `422`.
 
 | Method   | Path              | Body                  | Response                            |
 | -------- | ----------------- | --------------------- | ----------------------------------- |
-| `GET`    | `/api/notes`      |                       | `200` notes, most recently updated first |
-| `POST`   | `/api/notes`      | `{ "title", "body"? }` | `201` note, `422` if title is empty |
+| `GET`    | `/api/notes`      | `?project_id=`        | `200` notes, most recently updated first |
+| `POST`   | `/api/notes`      | `{ "title", "body"?, "project_id"? }` | `201` note, `422` if title is empty |
 | `GET`    | `/api/notes/{id}` |                       | `200` note, `404` if missing        |
-| `PUT`    | `/api/notes/{id}` | `{ "title", "body"? }` | `200` note, `404`, `422`            |
+| `PUT`    | `/api/notes/{id}` | `{ "title", "body"?, "project_id"? }` | `200` note, `404`, `422`            |
 | `DELETE` | `/api/notes/{id}` |                       | `204`, `404` if missing             |
+
+## Projects API
+
+Schemas `Project` and `ProjectInput`. The `/projects` page lists and creates projects; `/projects/{id}` edits or
+deletes one and shows its notes, where you can also add notes to it.
+
+| Method   | Path                 | Body                          | Response                                   |
+| -------- | -------------------- | ----------------------------- | ------------------------------------------ |
+| `GET`    | `/api/projects`      |                               | `200` projects, most recently updated first |
+| `POST`   | `/api/projects`      | `{ "name", "description"? }` | `201` project, `422` if name is empty      |
+| `GET`    | `/api/projects/{id}` |                               | `200` project, `404` if missing            |
+| `PUT`    | `/api/projects/{id}` | `{ "name", "description"? }` | `200` project, `404`, `422`                |
+| `DELETE` | `/api/projects/{id}` |                               | `204` (its notes are kept, unassigned), `404` |
 
 ## Database & migrations
 
